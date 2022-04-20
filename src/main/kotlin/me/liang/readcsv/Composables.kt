@@ -1,9 +1,6 @@
 package me.liang.readcsv
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.Button
 import androidx.compose.material.Text
 import androidx.compose.material.TextField
@@ -17,16 +14,16 @@ import java.util.*
 
 @Composable
 fun DBInfo() {
-    var url by remember { mutableStateOf("jdbc:mysql://localhost:3306/<YOUR SCHEMA>") }
+    var url by remember { mutableStateOf("jdbc:mysql://localhost:3306/testcsv") }
     var user by remember { mutableStateOf("root") }
-    var password by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("!Zxcv1234") }
     var connectingDb by remember { mutableStateOf(false) }
     val messageList = remember { mutableStateListOf<String>() }
     LaunchedEffect(connectingDb) {
-        if(connectingDb) {
+        if (connectingDb) {
+            connectingDb = false
             SQLHelper.connect(url, user, password) {
                 messageList.add(dataFormat.format(Date()) + ": " + it)
-                connectingDb = false
             }
         }
     }
@@ -40,8 +37,7 @@ fun DBInfo() {
                 label = { Text("DB URL") },
                 modifier = Modifier.weight(1.0f),
             )
-        }
-        Row {
+            Spacer(modifier = Modifier.width(Dp(16f)))
             TextField(
                 value = user,
                 onValueChange = {
@@ -50,8 +46,7 @@ fun DBInfo() {
                 label = { Text("username") },
                 modifier = Modifier.weight(1.0f),
             )
-        }
-        Row {
+            Spacer(modifier = Modifier.width(Dp(16f)))
             TextField(
                 value = password,
                 onValueChange = { changedValue ->

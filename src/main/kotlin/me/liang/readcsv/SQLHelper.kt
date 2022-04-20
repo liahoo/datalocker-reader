@@ -42,7 +42,7 @@ object SQLHelper {
                 ");"
         executeSQLCommand(cmd)
     }
-    fun importCsvFileToTable(path:String, tableName: String) {
+    fun importFileToTable(path:String, tableName: String) {
         executeSQLCommand(
                 "LOAD DATA INFILE '$path' INTO TABLE $tableName\n" +
                         "FIELDS TERMINATED BY ','\n" +
