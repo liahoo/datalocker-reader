@@ -13,13 +13,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.ComposeDialog
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.*
 import java.awt.FileDialog
 import java.awt.Frame
-import java.awt.event.KeyEvent
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -33,6 +32,8 @@ fun App(scope: WindowScope) {
     var createTableIfNotExist by remember { mutableStateOf(true) }
     var deleteUnzippedFile by remember { mutableStateOf(false) }
     val messageList = remember { mutableStateListOf<String>() }
+    var pendingFiles = remember { mutableStateListOf<String>() }
+    var processingFile by remember { mutableStateOf("") }
     var openFileExplorer by remember { mutableStateOf(false) }
     var fileNamePrefix by remember { mutableStateOf("part-") }
     var fileNameSuffix by remember { mutableStateOf(".gz") }
@@ -40,7 +41,7 @@ fun App(scope: WindowScope) {
     val scrollState = rememberScrollState()
     var readingStarted by remember { mutableStateOf(false) }
     fun sendMessage(msg: String) {
-        messageList.add(dataFormat.format(Date()) + ": " + msg)
+        messageList.add(0, dataFormat.format(Date()) + ": " + msg)
     }
 
     var showDialog by remember { mutableStateOf(false) }
@@ -54,20 +55,43 @@ fun App(scope: WindowScope) {
                 FileManager.readFiles(path, folderMaxDepth) { file ->
                     file.isFile && (fileNamePrefix.isEmpty() || file.name.startsWith(fileNamePrefix))
                             && (fileNameSuffix.isEmpty() || file.name.endsWith(fileNameSuffix))
-                }.takeIf { it.any() }?.forEach { file ->
-                    FileManager.unzipFile(file) { unzippedFile, isNew ->
-                        SQLHelper.importFileToTable(unzippedFile.canonicalPath, tableName)
-                        sendMessage("Imported ${file.canonicalPath} to $tableName")
-                        if (isNew && deleteUnzippedFile) {
-                            unzippedFile.delete()
-                        }
-                    }
+                }.takeIf { it.any() }?.toList()?.map { it.canonicalPath }?.let {
+                    pendingFiles.addAll(it)
                 } ?: sendMessage("No file was found like $fileNamePrefix*$fileNameSuffix in folder of $path")
             } catch (e: Exception) {
                 e.printStackTrace()
-                messageList.add(e.localizedMessage)
+                sendMessage(e.localizedMessage)
             } finally {
                 showDialog = false
+            }
+        }
+    }
+
+    LaunchedEffect(pendingFiles.size) {
+        if(pendingFiles.size > 0) {
+            if (processingFile == "") {
+                processingFile = pendingFiles[0]
+            }
+        } else {
+            sendMessage("Importing finished!")
+        }
+    }
+    LaunchedEffect(processingFile) {
+        if(processingFile.isNotEmpty()) {
+            try {
+                FileManager.unzipFile(processingFile) { unzippedFile, isNew ->
+                    if(isNew) sendMessage("Unzipped $processingFile to $unzippedFile")
+                    SQLHelper.importFileToTable(unzippedFile, tableName)
+                    sendMessage("Imported $processingFile to $tableName")
+                    if (isNew && deleteUnzippedFile) {
+                        File(processingFile).delete()
+                    }
+                }
+            } catch (e: Exception) {
+                sendMessage("Failed to import $processingFile to $tableName Reason: ${e.localizedMessage}")
+            } finally {
+                pendingFiles.remove(processingFile)
+                processingFile = ""
             }
         }
     }

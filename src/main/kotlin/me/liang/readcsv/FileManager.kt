@@ -38,17 +38,20 @@ object FileManager {
         }
         return nextFile
     }
-    fun unzipFile(file: File, cb: ((File, Boolean) -> Unit)? = null): File {
-        var targetFile: File = file
+    fun unzipFile(filePath: String, cb: ((String, Boolean) -> Unit)? = null): String {
+        val sourceFile = File(filePath)
+        var target = filePath
         var isNewFile = false
-        if(file.extension=="gz") {
-            targetFile = File(file.parent, file.nameWithoutExtension)
+        if(sourceFile.extension=="gz") {
+            var targetFile = File(sourceFile.parent, sourceFile.nameWithoutExtension)
             targetFile = ensureTargetFileNotExist(targetFile)
-            GZipHelper.unzip(file, targetFile, false)
+            GZipHelper.unzip(sourceFile, targetFile, false)
+            target = targetFile.canonicalPath
             isNewFile = true
         }
-        cb?.invoke(targetFile, isNewFile)
-        return targetFile
+
+        cb?.invoke(target, isNewFile)
+        return target
     }
     fun readFileToTable(file: File, tableName: String) {
         SQLHelper.importFileToTable(file.canonicalPath, tableName)

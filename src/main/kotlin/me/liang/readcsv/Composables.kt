@@ -64,12 +64,6 @@ fun DBInfo() {
             onClick = {
                 messageList.add(dataFormat.format(Date()) +": DB Connecting...")
                 connectingDb = true
-//                LaunchedEffect(Unit) {
-//                    SQLHelper.connect(url, user, password) {
-//                        Thread.sleep(1000L)
-//                        messageList.add(dataFormat.format(Date()) + ": " + it)
-//                    }
-//                }
             }
         ){
             Text("Connect")
